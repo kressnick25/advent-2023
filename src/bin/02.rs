@@ -24,6 +24,22 @@ impl Game {
         possible
     }
 
+    // Power of a game/bag. Not related to Math pow
+    fn power(&self) -> u32 {
+        let mut total = 1;
+        if self.red.is_some() {
+            total = total * self.red.unwrap();
+        }
+        if self.blue.is_some() {
+            total = total * self.blue.unwrap();
+        }
+        if self.green.is_some() {
+            total = total * self.green.unwrap();
+        }
+
+        total
+    }
+
     fn from_str(input: &str) -> Game {
         let lines = input.split(",");
 
@@ -46,7 +62,26 @@ impl Game {
 
         Game{red, green, blue}
     }
+}
 
+fn get_min_bag(games: &Vec<Game>) -> Game {
+    let mut red: Option<u32> = None;
+    let mut green: Option<u32> = None;
+    let mut blue: Option<u32> = None;
+
+    for game in games {
+        if game.red.is_some() {
+            red = game.red.and_then(|r| std::cmp::max(Some(r), red));
+        }
+        if game.blue.is_some() {
+            blue = game.blue.and_then(|b| std::cmp::max(Some(b), blue));
+        }
+        if game.green.is_some() {
+            green = game.green.and_then(|g| std::cmp::max(Some(g), green));
+        }
+    }
+
+    Game{red, green, blue}
 }
 
 const RED_MAX: u32 = 12;
@@ -81,7 +116,28 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+     let mut total = 0;
+
+    let re = Regex::new(r"Game (?<id>\d+): ").unwrap();
+    for line in input.lines() {
+        let line = re.replace(line, "");
+
+        let games_input: Vec<&str> = line.split(";").collect();
+        let games: Vec<Game> = games_input
+            .into_iter()
+            .map(|i| {
+                let i = i.trim();
+                Game::from_str(i)
+            })
+            .collect();
+
+        let min_bag = get_min_bag(&games);
+        total += min_bag.power();
+
+
+    }
+
+    Some(total)
 }
 
 #[cfg(test)]
@@ -99,6 +155,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(2286));
     }
 }
