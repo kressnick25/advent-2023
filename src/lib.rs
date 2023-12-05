@@ -39,3 +39,16 @@ pub fn find_numbers(s: &str) -> Vec<u32> {
         // collect the results in to a Vec<i64> (inferred from fn type signature)
         .collect()
 }
+
+pub fn find_numbers_64(s: &str) -> Vec<u64> {
+    // FIXME make this regex 'static'
+    let num_re: Regex = Regex::new(r"\d+").unwrap();
+
+    // iterate over all matches
+    num_re.find_iter(s)
+        // try to parse the string matches as i64 (inferred from fn type signature)
+        // and filter out the matches that can't be parsed (e.g. if there are too many digits to store in an i64).
+        .filter_map(|digits| digits.as_str().parse().ok())
+        // collect the results in to a Vec<i64> (inferred from fn type signature)
+        .collect()
+}

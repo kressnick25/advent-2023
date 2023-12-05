@@ -1,4 +1,4 @@
-use advent_of_code::find_numbers;
+use advent_of_code::find_numbers_64;
 use regex::Regex;
 use std::str::FromStr;
 
@@ -34,25 +34,25 @@ impl FromStr for MapType {
 
 #[derive(Debug)]
 struct MappingRange {
-    destination_start: u32,
-    source_start: u32,
-    length: u32
+    destination_start: u64,
+    source_start: u64,
+    length: u64
 }
 
 impl MappingRange {
-    fn source_end(&self) -> u32 {
+    fn source_end(&self) -> u64 {
        self.source_start + self.length
     }
 
-    fn destination_end(&self) -> u32 {
+    fn destination_end(&self) -> u64 {
         self.destination_start + self.length
     }
 
-    fn can_translate(&self, source: u32) -> bool {
+    fn can_translate(&self, source: u64) -> bool {
         return source >= self.source_start && source <= self.source_end();
     }
 
-    fn translate(&self, source: u32) -> u32 {
+    fn translate(&self, source: u64) -> u64 {
         return self.destination_start + source.abs_diff(self.source_start);
     }
 }
@@ -69,7 +69,7 @@ impl Mapping {
     }
 }
 
-fn seed_to_location(mappings: &Vec<Mapping>, seed: &u32) -> u32 {
+fn seed_to_location(mappings: &Vec<Mapping>, seed: &u64) -> u64 {
     let mut next = seed.clone();
     print!("\n");
     for mapping in mappings {
@@ -89,13 +89,13 @@ fn seed_to_location(mappings: &Vec<Mapping>, seed: &u32) -> u32 {
     next
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<u64> {
     let map_type_re = Regex::new(r"^(?<name>[a-z-]+)").unwrap();
 
     let mut input = input.lines();
 
     let _seed_line = input.next().unwrap();
-    let seeds = find_numbers(_seed_line);
+    let seeds = find_numbers_64(_seed_line);
 
     let mut mappings: Vec<Mapping> = vec![];
     let mut current_mapping = Mapping::default();
@@ -110,7 +110,7 @@ pub fn part_one(input: &str) -> Option<u32> {
             continue;
         }
         if line.chars().nth(0).is_some_and(|c| c.is_numeric()) {
-            let nums = find_numbers(line);
+            let nums = find_numbers_64(line);
             let range = MappingRange{
                 destination_start: nums[0],
                 source_start: nums[1],
@@ -133,7 +133,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(locations.min().unwrap())
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u64> {
     None
 }
 
