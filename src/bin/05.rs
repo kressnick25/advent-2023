@@ -71,22 +71,34 @@ impl Mapping {
 
 fn seed_to_location(mappings: &Vec<Mapping>, seed: &u64) -> u64 {
     let mut next = seed.clone();
-    print!("\n");
+    // print!("\n");
     for mapping in mappings {
         for range in &mapping.ranges {
             if range.can_translate(next) {
                 let temp = next.clone();
                 next = range.translate(next);
-                println!("translated {}, to {}, for stage {:?}", temp, next, mapping.mtype);
+                // println!("translated {}, to {}, for stage {:?}", temp, next, mapping.mtype);
                 break;
             }
             else {
-                println!("stage {:?}", mapping.mtype)
+                // println!("stage {:?}", mapping.mtype)
             }
         }
     }
 
     next
+}
+
+// TODO return iterator, not Vec
+fn extrapolate_seeds(seeds: Vec<u64>) -> Vec<u64>  {
+    let start_seeds = seeds.iter().step_by(2);
+    let lengths = seeds.iter().skip(1).step_by(2);
+
+    std::iter::zip(start_seeds, lengths).into_iter();
+    todo!("implement iterator that generates a seed for each start_seed -> start_seed + length")
+
+
+
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
@@ -134,6 +146,49 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
+    let map_type_re = Regex::new(r"^(?<name>[a-z-]+)").unwrap();
+
+    let mut input = input.lines();
+
+    let _seed_line = input.next().unwrap();
+    let seeds = find_numbers_64(_seed_line);
+
+    let mut mappings: Vec<Mapping> = vec![];
+    let mut current_mapping = Mapping::default();
+
+    let input = input.skip(1);
+    let max_index = input.clone().count() - 1;
+
+    for (i, line) in input.enumerate() {
+        if line.chars().nth(0).is_some_and(|c| c.is_alphabetic()) {
+            let caps = map_type_re.captures(line).unwrap();
+            current_mapping.mtype = MapType::from_str(&caps["name"]).unwrap();
+            continue;
+        }
+        if line.chars().nth(0).is_some_and(|c| c.is_numeric()) {
+            let nums = find_numbers_64(line);
+            let range = MappingRange{
+                destination_start: nums[0],
+                source_start: nums[1],
+                length: nums[2]
+            };
+            current_mapping.ranges.push(range);
+        }
+
+        if line.trim().is_empty() || i == max_index {
+            mappings.push(current_mapping);
+            current_mapping = Mapping::default();
+        }
+    }
+
+    println!("here");
+    let seeds = extrapolate_seeds(seeds);
+    println!("{:?}", seeds.len());
+    // let locations = seeds
+    // .iter()
+    // .map(|s| seed_to_location(&mappings, s));
+
+    // Some(locations.min().unwrap())
     None
 }
 
@@ -149,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        let result = part_two(&advent_of_code::template::read_file("inputs", DAY));
+        assert_eq!(result, Some(46));
     }
 }
