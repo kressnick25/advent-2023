@@ -2,13 +2,14 @@ advent_of_code::solution!(7);
 
 use std::{collections::{HashSet, HashMap}, cmp::Ordering};
 use self::Card::*;
+use self::HandType::*;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum Card {
     Ace = 14,
     King = 13,
     Queen = 12,
-    Jack = 11,
+    Jack = 0,
     Ten = 10,
     Nine = 9,
     Eight = 8,
@@ -67,7 +68,7 @@ impl TryFrom<char> for Card {
 
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum HandType {
     FiveOfAKind = 7,
     FourOfAKind = 6,
@@ -100,6 +101,8 @@ struct Hand {
 
 impl Hand {
     fn cmp(&self, other: &Hand) -> Ordering {
+        let self_cards = &self.cards;
+        let self_type = self.get_type();
         let mut ordering = self.get_type().cmp(&other.get_type());
 
         if ordering.is_eq() {
@@ -133,14 +136,51 @@ impl Hand {
         panic!("unknown high card")
     }
 
+    fn num_jokers(&self) -> usize {
+        self.cards.chars().into_iter().filter(|c| *c == 'J').count()
+    }
+
     fn get_type(&self) -> HandType {
-        if self.is_five_of_a_kind() { return HandType::FiveOfAKind }
-        if self.is_four_of_a_kind() { return HandType::FourOfAKind }
-        if self.is_full_house() { return HandType::FullHouse }
-        if self.is_three_of_a_kind() { return HandType::ThreeOfAKind }
-        if self.is_two_pair() { return HandType::TwoPair }
-        if self.is_one_pair() { return HandType::OnePair }
-        if self.is_high_card() { return HandType::HighCard }
+        if self.is_five_of_a_kind() { return FiveOfAKind }
+        if self.is_four_of_a_kind() {
+            if self.num_jokers() == 1 { return FiveOfAKind }
+            return FourOfAKind
+        }
+        if self.is_full_house() {
+            return match self.num_jokers() {
+                1 => FourOfAKind,
+                2 => FiveOfAKind,
+                3 => FiveOfAKind,
+                _ => FullHouse
+            }
+        }
+        if self.is_three_of_a_kind() {
+            return match self.num_jokers() {
+                1 => FourOfAKind,
+                2 => FiveOfAKind,
+                3 => FourOfAKind,
+                _ => ThreeOfAKind
+            }
+        }
+        if self.is_two_pair() {
+            return match self.num_jokers() {
+                1 => FullHouse,
+                2 => FourOfAKind,
+                _ => TwoPair
+            }
+        }
+        if self.is_one_pair() {
+            return match self.num_jokers() {
+                1 => ThreeOfAKind,
+                _ => OnePair
+            }
+        }
+        if self.is_high_card() {
+            return match self.num_jokers() {
+                1 => OnePair,
+                _ => HighCard
+            }
+        }
 
         else { panic!("Unknown HandType: {}", self.cards) }
     }
@@ -212,6 +252,12 @@ pub fn part_one(input: &str) -> Option<u32> {
         })
         .collect();
 
+    for h in &hands {
+        if h.cards.contains('J') {
+            println!("{} {:?}", h.cards, h.get_type());
+        }
+    }
+
     hands.sort_by(|a, b| a.cmp(b));
 
     let mut total = 0;
@@ -225,7 +271,26 @@ pub fn part_one(input: &str) -> Option<u32> {
 
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut hands: Vec<Hand> = input.lines()
+        .map(|line| {
+            let mut s = line.split_whitespace();
+            let cards = s.next().unwrap();
+            let bid = s.next().unwrap();
+            let bid = bid.parse::<usize>().unwrap();
+
+            Hand{cards: cards.to_string(), bid: bid}
+        })
+        .collect();
+
+    hands.sort_by(|a, b| a.cmp(b));
+
+    let mut total = 0;
+    for (i, hand) in hands.iter().enumerate() {
+        let multiplyer = i + 1;
+        total += hand.bid * multiplyer;
+    }
+
+    Some(total as u32)
 }
 
 #[cfg(test)]
@@ -241,6 +306,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(5905));
     }
 }
